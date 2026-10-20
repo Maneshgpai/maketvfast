@@ -1,0 +1,7 @@
+# Personal TV data: never commit (contains your TV app list and IP)
+/backup_packages.txt
+/backup_settings.txt
+/restore.sh
+/report.md
+/changes.log
+*.local

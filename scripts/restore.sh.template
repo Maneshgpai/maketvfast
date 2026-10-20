@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# restore.sh - undo every change made by the TV speed-up.
+# AI fills the lists below from backup_packages.txt / backup_settings.txt (step 03),
+# saves the result as restore.sh in the project root, then runs: chmod +x restore.sh
+# Add each package to PACKAGES BEFORE disabling it, so a half-done batch is still undoable.
+# Usage: ./restore.sh [TV_IP:PORT]
+# Windows without bash: AI runs the same adb lines one by one.
+
+TV="${1:-__TV_IP__:5555}"          # AI fills TV IP
+ADB="adb -s $TV shell"
+
+adb connect "$TV" >/dev/null
+if ! adb -s "$TV" get-state >/dev/null 2>&1; then
+  echo "TV not connected at $TV. Check IP, debugging ON, tap Allow on TV."
+  exit 1
+fi
+
+# --- Packages WE disabled (AI fills; do NOT list apps that were already disabled before) ---
+PACKAGES=(
+  # __PACKAGE_NAME__
+)
+
+for p in "${PACKAGES[@]}"; do
+  echo "enable $p"
+  # 'pm enable' first; fall back to install-existing if package was removed
+  $ADB "pm enable --user 0 $p || cmd package install-existing $p" 2>&1 | tail -1
+done
+
+# --- Settings: back to the values saved in backup_settings.txt (AI fills) ---
+# 'null' in backup means unset -> use 'settings delete'.
+$ADB settings put global window_animation_scale __WINDOW_ANIM__
+$ADB settings put global transition_animation_scale __TRANSITION_ANIM__
+# $ADB settings delete global animator_duration_scale   # use if backup said null
+# Only if ad block was used (backup said null -> 'settings delete'):
+# $ADB settings put global private_dns_mode __PRIVATE_DNS_MODE__
+# $ADB settings put global private_dns_specifier __PRIVATE_DNS_SPECIFIER__
+
+echo "Done. Reboot TV: adb -s $TV reboot"
